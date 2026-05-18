@@ -1,0 +1,87 @@
+name: CI + npm publish (WASM)
+
+on:
+  push:
+    branches: [master, main]
+  pull_request:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Existing tag to (re)publish to npm. Leave empty to run CI only."
+        required: false
+        type: string
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - run: cargo test --all-features
+      - run: cargo fmt -- --check
+      - run: cargo clippy --all-targets -- -D warnings
+
+  publish-wasm:
+    if: |
+      github.event_name == 'release' ||
+      (github.event_name == 'workflow_dispatch' && inputs.tag != '')
+    needs: test
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.release.tag_name || inputs.tag }}
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+
+      - name: Install wasm-pack
+        run: |
+          curl --proto '=https' --tlsv1.2 -sSf \
+            https://rustwasm.github.io/wasm-pack/installer/init.sh | sh
+
+      - name: Build WASM bundle
+        run: wasm-pack build --target bundler --release
+
+      - name: Verify Cargo.toml version matches release tag
+        run: |
+          tag="${{ github.event.release.tag_name || inputs.tag }}"
+          want="${tag#v}"
+          have=$(grep -E '^version\s*=' Cargo.toml | head -1 | sed -E 's/.*"([^"]+)".*/\1/')
+          if [ "$want" != "$have" ]; then
+            echo "Cargo.toml version ($have) does not match release tag ($tag / $want)" >&2
+            exit 1
+          fi
+
+      - name: Force npm package name
+        run: |
+          node -e 'const fs=require("fs");const p="pkg/package.json";const j=JSON.parse(fs.readFileSync(p,"utf8"));j.name="@eventky/pubky-app-specs";fs.writeFileSync(p,JSON.stringify(j,null,2)+"\n");'
+
+      - name: Setup npm auth
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          registry-url: https://registry.npmjs.org
+
+      - name: Publish to npm
+        working-directory: pkg
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          if [ -z "${NODE_AUTH_TOKEN:-}" ]; then
+            echo "NPM_TOKEN secret missing — skipping publish." >&2
+            exit 0
+          fi
+          tag="${{ github.event.release.tag_name || inputs.tag }}"
+          if [[ "$tag" == *-alpha* || "$tag" == *-beta* || "$tag" == *-rc* ]]; then
+            npm publish --access public --tag next --provenance
+          else
+            npm publish --access public --provenance
+          fi
