@@ -27,9 +27,9 @@ const MAX_AUTHORS: usize = 20;
 #[cfg_attr(feature = "openapi", derive(ToSchema))]
 pub struct StyledDescription {
     #[cfg_attr(target_arch = "wasm32", wasm_bindgen(skip))]
-    pub content: String,     // Raw content
+    pub content: String, // Raw content
     #[cfg_attr(target_arch = "wasm32", wasm_bindgen(skip))]
-    pub format: String,      // Format type: "markdown", "html", "plain"
+    pub format: String, // Format type: "markdown", "html", "plain"
     #[cfg_attr(target_arch = "wasm32", wasm_bindgen(skip))]
     pub attachments: Option<Vec<String>>, // URI references to attached files
 }
@@ -71,28 +71,28 @@ impl StyledDescription {
 pub struct PubkyAppCalendar {
     // RFC 7986 - Calendar Properties
     #[cfg_attr(target_arch = "wasm32", wasm_bindgen(skip))]
-    pub name: String,                      // REQUIRED - calendar display name
+    pub name: String, // REQUIRED - calendar display name
     #[cfg_attr(target_arch = "wasm32", wasm_bindgen(skip))]
-    pub color: Option<String>,             // CSS color value (hex format #RRGGBB)
+    pub color: Option<String>, // CSS color value (hex format #RRGGBB)
     #[cfg_attr(target_arch = "wasm32", wasm_bindgen(skip))]
-    pub image_uri: Option<String>,         // Calendar image/logo URI (pubky:// or https)
+    pub image_uri: Option<String>, // Calendar image/logo URI (pubky:// or https)
 
     // RFC 5545 - Calendar Metadata
     #[cfg_attr(target_arch = "wasm32", wasm_bindgen(skip))]
-    pub timezone: String,                  // REQUIRED - IANA timezone ID (e.g., "Europe/Zurich")
+    pub timezone: String, // REQUIRED - IANA timezone ID (e.g., "Europe/Zurich")
     #[cfg_attr(target_arch = "wasm32", wasm_bindgen(skip))]
-    pub description: Option<String>,       // Calendar description
+    pub description: Option<String>, // Calendar description
     #[cfg_attr(target_arch = "wasm32", wasm_bindgen(skip))]
-    pub url: Option<String>,               // Calendar homepage/details URL
-    pub created: Option<i64>,              // Creation timestamp (Unix microseconds)
+    pub url: Option<String>, // Calendar homepage/details URL
+    pub created: Option<i64>, // Creation timestamp (Unix microseconds)
 
     // Versioning fields (like events) for edit tracking
-    pub sequence: Option<i32>,             // Version number, incremented on each edit
-    pub last_modified: Option<i64>,        // Last modification timestamp (Unix microseconds)
+    pub sequence: Option<i32>, // Version number, incremented on each edit
+    pub last_modified: Option<i64>, // Last modification timestamp (Unix microseconds)
 
     // Pubky Extensions (all custom fields use x_pubky_ prefix)
     #[cfg_attr(target_arch = "wasm32", wasm_bindgen(skip))]
-    pub x_pubky_authors: Option<Vec<String>>,  // Pubky URIs of users who can add events to this calendar (only owner can edit calendar itself)
+    pub x_pubky_authors: Option<Vec<String>>, // Pubky URIs of users who can add events to this calendar (only owner can edit calendar itself)
 }
 
 impl PubkyAppCalendar {
@@ -211,7 +211,10 @@ impl PubkyAppCalendar {
         self.sequence
     }
 
-    #[cfg_attr(target_arch = "wasm32", wasm_bindgen(getter, js_name = "getLastModified"))]
+    #[cfg_attr(
+        target_arch = "wasm32",
+        wasm_bindgen(getter, js_name = "getLastModified")
+    )]
     pub fn last_modified(&self) -> Option<i64> {
         self.last_modified
     }
@@ -246,15 +249,15 @@ impl Validatable for PubkyAppCalendar {
     fn sanitize(self) -> Self {
         // Sanitize name
         let name = self.name.trim().chars().take(MAX_NAME_LENGTH).collect();
-        
+
         // Sanitize timezone
         let timezone = self.timezone.trim().to_string();
-        
+
         // Sanitize description
-        let description = self.description.map(|desc| {
-            desc.trim().chars().take(MAX_DESCRIPTION_LENGTH).collect()
-        });
-        
+        let description = self
+            .description
+            .map(|desc| desc.trim().chars().take(MAX_DESCRIPTION_LENGTH).collect());
+
         // Sanitize color (keep only valid hex colors)
         let color = self.color.and_then(|c| {
             let c = c.trim().to_lowercase();
@@ -264,42 +267,47 @@ impl Validatable for PubkyAppCalendar {
                 None
             }
         });
-        
+
         // Sanitize image_uri and url
-        let image_uri = self.image_uri.and_then(|uri| {
-            match Url::parse(&uri.trim()) {
+        let image_uri = self
+            .image_uri
+            .and_then(|uri| match Url::parse(&uri.trim()) {
                 Ok(url) => Some(url.to_string()),
                 Err(_) => None,
-            }
+            });
+
+        let url = self.url.and_then(|uri| match Url::parse(&uri.trim()) {
+            Ok(url) => Some(url.to_string()),
+            Err(_) => None,
         });
-        
-        let url = self.url.and_then(|uri| {
-            match Url::parse(&uri.trim()) {
-                Ok(url) => Some(url.to_string()),
-                Err(_) => None,
-            }
-        });
-        
+
         // Sanitize author identifiers - accepts both full pubky URIs and plain public keys
-        let x_pubky_authors = self.x_pubky_authors.map(|authors| {
-            authors.into_iter()
-                .take(MAX_AUTHORS)
-                .filter_map(|author_value| {
-                    let trimmed = author_value.trim();
-                    // If it's a valid URL (full pubky URI), use it
-                    if let Ok(url) = Url::parse(trimmed) {
-                        return Some(url.to_string());
-                    }
-                    // If it looks like a public key (alphanumeric, reasonable length), accept it as-is
-                    // Public keys are typically 52 characters (z-base-32 encoded)
-                    if trimmed.len() >= 32 && trimmed.len() <= 64 && trimmed.chars().all(|c| c.is_alphanumeric()) {
-                        return Some(trimmed.to_string());
-                    }
-                    None
-                })
-                .collect::<Vec<_>>()
-        }).filter(|authors| !authors.is_empty());
-        
+        let x_pubky_authors = self
+            .x_pubky_authors
+            .map(|authors| {
+                authors
+                    .into_iter()
+                    .take(MAX_AUTHORS)
+                    .filter_map(|author_value| {
+                        let trimmed = author_value.trim();
+                        // If it's a valid URL (full pubky URI), use it
+                        if let Ok(url) = Url::parse(trimmed) {
+                            return Some(url.to_string());
+                        }
+                        // If it looks like a public key (alphanumeric, reasonable length), accept it as-is
+                        // Public keys are typically 52 characters (z-base-32 encoded)
+                        if trimmed.len() >= 32
+                            && trimmed.len() <= 64
+                            && trimmed.chars().all(|c| c.is_alphanumeric())
+                        {
+                            return Some(trimmed.to_string());
+                        }
+                        None
+                    })
+                    .collect::<Vec<_>>()
+            })
+            .filter(|authors| !authors.is_empty());
+
         Self {
             name,
             color,
@@ -323,16 +331,22 @@ impl Validatable for PubkyAppCalendar {
         // Validate name
         let name_length = self.name.chars().count();
         if !(MIN_NAME_LENGTH..=MAX_NAME_LENGTH).contains(&name_length) {
-            return Err("Validation Error: Calendar name length must be between 1 and 100 characters".into());
+            return Err(
+                "Validation Error: Calendar name length must be between 1 and 100 characters"
+                    .into(),
+            );
         }
 
         // Validate timezone
         if self.timezone.trim().is_empty() {
             return Err("Validation Error: Timezone is required".into());
         }
-        
+
         if !is_valid_timezone(&self.timezone) {
-            return Err("Validation Error: Invalid timezone format. Must be a valid IANA timezone ID".into());
+            return Err(
+                "Validation Error: Invalid timezone format. Must be a valid IANA timezone ID"
+                    .into(),
+            );
         }
 
         // Validate description length
@@ -368,19 +382,17 @@ mod tests {
 
     #[test]
     fn test_new() {
-        let calendar = PubkyAppCalendar::new(
-            "Work Calendar".to_string(),
-            "Europe/Zurich".to_string(),
-        )
-        .with_color("#3498db".to_string())
-        .with_description("My work events".to_string());
+        let calendar =
+            PubkyAppCalendar::new("Work Calendar".to_string(), "Europe/Zurich".to_string())
+                .with_color("#3498db".to_string())
+                .with_description("My work events".to_string());
 
         assert_eq!(calendar.name, "Work Calendar");
         assert_eq!(calendar.timezone, "Europe/Zurich");
         assert_eq!(calendar.color, Some("#3498db".to_string()));
         assert_eq!(calendar.description, Some("My work events".to_string()));
         assert!(calendar.created.is_some());
-        
+
         // Check that created timestamp is recent
         let now = timestamp();
         assert!(calendar.created.unwrap() <= now && calendar.created.unwrap() >= now - 1_000_000);
@@ -388,12 +400,10 @@ mod tests {
 
     #[test]
     fn test_create_id() {
-        let calendar = PubkyAppCalendar::new(
-            "Work Calendar".to_string(),
-            "Europe/Zurich".to_string(),
-        )
-        .with_color("#3498db".to_string())
-        .with_description("My work events".to_string());
+        let calendar =
+            PubkyAppCalendar::new("Work Calendar".to_string(), "Europe/Zurich".to_string())
+                .with_color("#3498db".to_string())
+                .with_description("My work events".to_string());
 
         let calendar_id = calendar.create_id();
         println!("Generated Calendar ID: {}", calendar_id);
@@ -404,10 +414,8 @@ mod tests {
 
     #[test]
     fn test_create_path() {
-        let calendar = PubkyAppCalendar::new(
-            "Work Calendar".to_string(),
-            "Europe/Zurich".to_string(),
-        );
+        let calendar =
+            PubkyAppCalendar::new("Work Calendar".to_string(), "Europe/Zurich".to_string());
 
         let calendar_id = calendar.create_id();
         let path = PubkyAppCalendar::create_path(&calendar_id);
@@ -422,12 +430,10 @@ mod tests {
 
     #[test]
     fn test_validate_valid() {
-        let calendar = PubkyAppCalendar::new(
-            "Work Calendar".to_string(),
-            "Europe/Zurich".to_string(),
-        )
-        .with_color("#3498db".to_string())
-        .with_description("My work events".to_string());
+        let calendar =
+            PubkyAppCalendar::new("Work Calendar".to_string(), "Europe/Zurich".to_string())
+                .with_color("#3498db".to_string())
+                .with_description("My work events".to_string());
 
         let id = calendar.create_id();
         let result = calendar.validate(Some(&id));
@@ -462,11 +468,9 @@ mod tests {
 
     #[test]
     fn test_validate_invalid_color() {
-        let mut calendar = PubkyAppCalendar::new(
-            "Work Calendar".to_string(),
-            "Europe/Zurich".to_string(),
-        );
-        
+        let mut calendar =
+            PubkyAppCalendar::new("Work Calendar".to_string(), "Europe/Zurich".to_string());
+
         // Manually set invalid color after creation to bypass sanitization
         calendar.color = Some("invalid_color".to_string());
 
@@ -510,12 +514,10 @@ mod tests {
         }
         "##;
 
-        let calendar = PubkyAppCalendar::new(
-            "Work Calendar".to_string(),
-            "Europe/Zurich".to_string(),
-        )
-        .with_color("#3498db".to_string())
-        .with_description("My work events".to_string());
+        let calendar =
+            PubkyAppCalendar::new("Work Calendar".to_string(), "Europe/Zurich".to_string())
+                .with_color("#3498db".to_string())
+                .with_description("My work events".to_string());
         let id = calendar.create_id();
 
         let blob = calendar_json.as_bytes();
@@ -524,6 +526,9 @@ mod tests {
         assert_eq!(calendar_parsed.name, "Work Calendar");
         assert_eq!(calendar_parsed.timezone, "Europe/Zurich");
         assert_eq!(calendar_parsed.color, Some("#3498db".to_string()));
-        assert_eq!(calendar_parsed.description, Some("My work events".to_string()));
+        assert_eq!(
+            calendar_parsed.description,
+            Some("My work events".to_string())
+        );
     }
 }

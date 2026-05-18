@@ -176,8 +176,9 @@ impl Validatable for EventLocation {
                     MAX_LOCATION_URI_LENGTH
                 ));
             }
-            Url::parse(uri)
-                .map_err(|_| "Validation Error: EventLocation uri must be a valid URL".to_string())?;
+            Url::parse(uri).map_err(|_| {
+                "Validation Error: EventLocation uri must be a valid URL".to_string()
+            })?;
         }
         if let Some(ref desc) = self.description {
             if desc.chars().count() > MAX_LOCATION_DESCRIPTION_LENGTH {

@@ -31,7 +31,10 @@ impl EventkyAppObject {
                 let obj = <PubkyAppAttendee as Validatable>::try_from(blob, id)?;
                 Ok(EventkyAppObject::Attendee(obj))
             }
-            _ => Err(format!("Unrecognized eventky.app resource: {}", path_segment)),
+            _ => Err(format!(
+                "Unrecognized eventky.app resource: {}",
+                path_segment
+            )),
         }
     }
 }

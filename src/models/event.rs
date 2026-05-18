@@ -39,55 +39,55 @@ const VALID_STATUS: &[&str] = &["CONFIRMED", "TENTATIVE", "CANCELLED"];
 pub struct PubkyAppEvent {
     // RFC 5545 - Core Event Properties (REQUIRED)
     #[cfg_attr(target_arch = "wasm32", wasm_bindgen(skip))]
-    pub uid: String,                    // Globally unique identifier
-    pub dtstamp: i64,                   // Creation/last-modified timestamp (Unix microseconds)
+    pub uid: String, // Globally unique identifier
+    pub dtstamp: i64, // Creation/last-modified timestamp (Unix microseconds)
     #[cfg_attr(target_arch = "wasm32", wasm_bindgen(skip))]
-    pub dtstart: String,                // Start date-time in ISO 8601 format (YYYY-MM-DDTHH:MM:SS)
+    pub dtstart: String, // Start date-time in ISO 8601 format (YYYY-MM-DDTHH:MM:SS)
     #[cfg_attr(target_arch = "wasm32", wasm_bindgen(skip))]
-    pub summary: String,                // Event title/subject
+    pub summary: String, // Event title/subject
 
     // RFC 5545 - Time & Duration
     #[cfg_attr(target_arch = "wasm32", wasm_bindgen(skip))]
-    pub dtend: Option<String>,          // End date-time in ISO 8601 format (mutually exclusive with duration)
+    pub dtend: Option<String>, // End date-time in ISO 8601 format (mutually exclusive with duration)
     #[cfg_attr(target_arch = "wasm32", wasm_bindgen(skip))]
-    pub duration: Option<String>,       // RFC 5545 duration format (mutually exclusive with dtend)
+    pub duration: Option<String>, // RFC 5545 duration format (mutually exclusive with dtend)
     #[cfg_attr(target_arch = "wasm32", wasm_bindgen(skip))]
-    pub dtstart_tzid: Option<String>,   // IANA timezone for dtstart (e.g., "Europe/Zurich")
+    pub dtstart_tzid: Option<String>, // IANA timezone for dtstart (e.g., "Europe/Zurich")
     #[cfg_attr(target_arch = "wasm32", wasm_bindgen(skip))]
-    pub dtend_tzid: Option<String>,     // IANA timezone for dtend
+    pub dtend_tzid: Option<String>, // IANA timezone for dtend
 
     // RFC 5545 - Event Details
     #[cfg_attr(target_arch = "wasm32", wasm_bindgen(skip))]
-    pub description: Option<String>,    // Plain text description
+    pub description: Option<String>, // Plain text description
     #[cfg_attr(target_arch = "wasm32", wasm_bindgen(skip))]
-    pub status: Option<String>,         // CONFIRMED | TENTATIVE | CANCELLED
-    
+    pub status: Option<String>, // CONFIRMED | TENTATIVE | CANCELLED
+
     // RFC 9073 - Structured Locations
     /// Structured locations for this event (RFC 9073 VLOCATION)
     /// First location is considered primary. Supports multiple for hybrid events.
     #[cfg_attr(target_arch = "wasm32", wasm_bindgen(skip))]
     pub locations: Option<Vec<EventLocation>>,
-    
+
     // RFC 7986 - Event Publishing Extensions
     #[cfg_attr(target_arch = "wasm32", wasm_bindgen(skip))]
-    pub image_uri: Option<String>,      // Event image/banner URI
+    pub image_uri: Option<String>, // Event image/banner URI
     #[cfg_attr(target_arch = "wasm32", wasm_bindgen(skip))]
-    pub url: Option<String>,            // Event homepage/details link
+    pub url: Option<String>, // Event homepage/details link
 
     // RFC 5545 - Change Management
-    pub sequence: Option<i32>,          // Version number (increment on modifications)
-    pub last_modified: Option<i64>,     // Last modification timestamp
-    pub created: Option<i64>,           // Creation timestamp
+    pub sequence: Option<i32>, // Version number (increment on modifications)
+    pub last_modified: Option<i64>, // Last modification timestamp
+    pub created: Option<i64>,  // Creation timestamp
 
     // RFC 5545 - Recurrence
     #[cfg_attr(target_arch = "wasm32", wasm_bindgen(skip))]
-    pub rrule: Option<String>,          // Recurrence rule (RFC 5545 format)
+    pub rrule: Option<String>, // Recurrence rule (RFC 5545 format)
     #[cfg_attr(target_arch = "wasm32", wasm_bindgen(skip))]
-    pub rdate: Option<Vec<String>>,     // Additional recurrence dates
+    pub rdate: Option<Vec<String>>, // Additional recurrence dates
     #[cfg_attr(target_arch = "wasm32", wasm_bindgen(skip))]
-    pub exdate: Option<Vec<String>>,    // Excluded recurrence dates
+    pub exdate: Option<Vec<String>>, // Excluded recurrence dates
     #[cfg_attr(target_arch = "wasm32", wasm_bindgen(skip))]
-    pub recurrence_id: Option<String>,  // ISO 8601 datetime of specific recurrence instance
+    pub recurrence_id: Option<String>, // ISO 8601 datetime of specific recurrence instance
 
     // RFC 9073 - Rich Content
     #[cfg_attr(target_arch = "wasm32", wasm_bindgen(skip))]
@@ -292,21 +292,26 @@ impl Validatable for PubkyAppEvent {
     fn sanitize(self) -> Self {
         // Sanitize UID
         let uid = self.uid.trim().chars().take(MAX_UID_LENGTH).collect();
-        
+
         // Sanitize summary
-        let summary = self.summary.trim().chars().take(MAX_SUMMARY_LENGTH).collect();
-        
+        let summary = self
+            .summary
+            .trim()
+            .chars()
+            .take(MAX_SUMMARY_LENGTH)
+            .collect();
+
         // Sanitize dtstart (trim whitespace, validate format)
         let dtstart = self.dtstart.trim().to_string();
-        
+
         // Sanitize dtend (trim whitespace, validate format)
         let dtend = self.dtend.map(|dt| dt.trim().to_string());
-        
+
         // Sanitize description
-        let description = self.description.map(|desc| {
-            desc.trim().chars().take(MAX_DESCRIPTION_LENGTH).collect()
-        });
-        
+        let description = self
+            .description
+            .map(|desc| desc.trim().chars().take(MAX_DESCRIPTION_LENGTH).collect());
+
         // Sanitize status (normalize to uppercase)
         let status = self.status.map(|s| {
             let s = s.trim().to_uppercase();
@@ -316,34 +321,33 @@ impl Validatable for PubkyAppEvent {
                 "CONFIRMED".to_string() // Default to CONFIRMED for invalid status
             }
         });
-        
+
         // Sanitize URIs (image_uri, url, calendar_uris)
-        let image_uri = self.image_uri.and_then(|uri| {
-            match Url::parse(&uri.trim()) {
+        let image_uri = self
+            .image_uri
+            .and_then(|uri| match Url::parse(&uri.trim()) {
                 Ok(url) => Some(url.to_string()),
                 Err(_) => None,
-            }
+            });
+
+        let url = self.url.and_then(|uri| match Url::parse(&uri.trim()) {
+            Ok(url) => Some(url.to_string()),
+            Err(_) => None,
         });
-        
-        let url = self.url.and_then(|uri| {
-            match Url::parse(&uri.trim()) {
-                Ok(url) => Some(url.to_string()),
-                Err(_) => None,
-            }
-        });
-        
-        let x_pubky_calendar_uris = self.x_pubky_calendar_uris.map(|uris| {
-            uris.into_iter()
-                .take(MAX_CALENDAR_URIS)
-                .filter_map(|uri| {
-                    match Url::parse(&uri.trim()) {
+
+        let x_pubky_calendar_uris = self
+            .x_pubky_calendar_uris
+            .map(|uris| {
+                uris.into_iter()
+                    .take(MAX_CALENDAR_URIS)
+                    .filter_map(|uri| match Url::parse(&uri.trim()) {
                         Ok(url) => Some(url.to_string()),
                         Err(_) => None,
-                    }
-                })
-                .collect::<Vec<_>>()
-        }).filter(|uris| !uris.is_empty());
-        
+                    })
+                    .collect::<Vec<_>>()
+            })
+            .filter(|uris| !uris.is_empty());
+
         // Sanitize timezones
         let dtstart_tzid = self.dtstart_tzid.and_then(|tz| {
             if is_valid_timezone(&tz.trim()) {
@@ -352,7 +356,7 @@ impl Validatable for PubkyAppEvent {
                 None
             }
         });
-        
+
         let dtend_tzid = self.dtend_tzid.and_then(|tz| {
             if is_valid_timezone(&tz.trim()) {
                 Some(tz.trim().to_string())
@@ -360,7 +364,7 @@ impl Validatable for PubkyAppEvent {
                 None
             }
         });
-        
+
         // Sanitize duration
         let duration = self.duration.and_then(|dur| {
             if is_valid_duration(&dur.trim()) {
@@ -369,15 +373,18 @@ impl Validatable for PubkyAppEvent {
                 None
             }
         });
-        
+
         // Sanitize locations (limit count and sanitize each)
-        let locations = self.locations.map(|locs| {
-            locs.into_iter()
-                .take(MAX_LOCATIONS)
-                .map(|loc| loc.sanitize())
-                .collect::<Vec<_>>()
-        }).filter(|locs| !locs.is_empty());
-        
+        let locations = self
+            .locations
+            .map(|locs| {
+                locs.into_iter()
+                    .take(MAX_LOCATIONS)
+                    .map(|loc| loc.sanitize())
+                    .collect::<Vec<_>>()
+            })
+            .filter(|locs| !locs.is_empty());
+
         Self {
             uid,
             dtstamp: self.dtstamp,
@@ -413,13 +420,18 @@ impl Validatable for PubkyAppEvent {
         // Validate UID
         let uid_length = self.uid.chars().count();
         if !(MIN_UID_LENGTH..=MAX_UID_LENGTH).contains(&uid_length) {
-            return Err("Validation Error: Event UID length must be between 1 and 255 characters".into());
+            return Err(
+                "Validation Error: Event UID length must be between 1 and 255 characters".into(),
+            );
         }
 
         // Validate summary
         let summary_length = self.summary.chars().count();
         if !(MIN_SUMMARY_LENGTH..=MAX_SUMMARY_LENGTH).contains(&summary_length) {
-            return Err("Validation Error: Event summary length must be between 1 and 500 characters".into());
+            return Err(
+                "Validation Error: Event summary length must be between 1 and 500 characters"
+                    .into(),
+            );
         }
 
         // Validate dtstart format
@@ -432,7 +444,7 @@ impl Validatable for PubkyAppEvent {
             if !is_valid_datetime(dtend) {
                 return Err("Validation Error: Invalid end date-time format. Must be ISO 8601 (YYYY-MM-DDTHH:MM:SS)".into());
             }
-            
+
             // Validate that dtend is after dtstart
             if dtend <= &self.dtstart {
                 return Err("Validation Error: Event end time must be after start time".into());
@@ -503,7 +515,7 @@ mod tests {
         assert_eq!(event.summary, "Team Meeting");
         assert_eq!(event.status, Some("CONFIRMED".to_string()));
         assert!(event.created.is_some());
-        
+
         // Check that timestamps are recent
         let now = timestamp();
         assert!(event.dtstamp <= now && event.dtstamp >= now - 1_000_000);
@@ -527,7 +539,10 @@ mod tests {
         assert_eq!(event.dtend, Some("2025-12-01T18:00:00".to_string()));
         assert_eq!(event.summary, "Annual Conference");
         assert!(event.locations.is_some());
-        assert_eq!(event.locations.as_ref().unwrap()[0].label, "Convention Center");
+        assert_eq!(
+            event.locations.as_ref().unwrap()[0].label,
+            "Convention Center"
+        );
     }
 
     #[test]
@@ -611,12 +626,15 @@ mod tests {
             "event-123".to_string(),
             "2025-12-01T10:00:00".to_string(),
             "Team Meeting".to_string(),
-        ).with_end_time("2025-12-01T09:00:00".to_string()); // End before start
+        )
+        .with_end_time("2025-12-01T09:00:00".to_string()); // End before start
 
         let id = event.create_id();
         let result = event.validate(Some(&id));
         assert!(result.is_err());
-        assert!(result.unwrap_err().contains("end time must be after start time"));
+        assert!(result
+            .unwrap_err()
+            .contains("end time must be after start time"));
     }
 
     #[test]
@@ -625,23 +643,26 @@ mod tests {
             "event-123".to_string(),
             "2025-12-01T10:00:00".to_string(),
             "Team Meeting".to_string(),
-        ).with_end_time("2025-12-01T11:00:00".to_string());
-        
+        )
+        .with_end_time("2025-12-01T11:00:00".to_string());
+
         // Set both dtend and duration (invalid)
         event.duration = Some("PT1H".to_string());
 
         let id = event.create_id();
         let result = event.validate(Some(&id));
         assert!(result.is_err());
-        assert!(result.unwrap_err().contains("cannot have both dtend and duration"));
+        assert!(result
+            .unwrap_err()
+            .contains("cannot have both dtend and duration"));
     }
 
     #[test]
     fn test_sanitize() {
         let event = PubkyAppEvent::new(
-            "  event-123  ".to_string(), // uid
+            "  event-123  ".to_string(),           // uid
             "  2025-12-01T10:00:00  ".to_string(), // dtstart
-            "  Team Meeting  ".to_string(), // summary
+            "  Team Meeting  ".to_string(),        // summary
         )
         .with_description("  Meeting description  ".to_string())
         .with_status("  confirmed  ".to_string()); // lowercase
@@ -658,20 +679,20 @@ mod tests {
         assert!(is_valid_timezone("Europe/Zurich"));
         assert!(is_valid_timezone("America/New_York"));
         assert!(is_valid_timezone("Asia/Tokyo"));
-        assert!(!is_valid_timezone(""));           // Empty
-        assert!(!is_valid_timezone("Invalid"));    // No slash
+        assert!(!is_valid_timezone("")); // Empty
+        assert!(!is_valid_timezone("Invalid")); // No slash
         assert!(!is_valid_timezone("Europe@Zurich")); // Invalid char
     }
 
     #[test]
     fn test_duration_validation() {
-        assert!(is_valid_duration("PT1H"));       // 1 hour
-        assert!(is_valid_duration("PT30M"));      // 30 minutes
-        assert!(is_valid_duration("P1D"));        // 1 day
-        assert!(is_valid_duration("P1DT2H30M"));  // 1 day, 2 hours, 30 minutes
-        assert!(!is_valid_duration("1H"));        // Missing P
-        assert!(!is_valid_duration(""));          // Empty
-        assert!(!is_valid_duration("PT@H"));      // Invalid character
+        assert!(is_valid_duration("PT1H")); // 1 hour
+        assert!(is_valid_duration("PT30M")); // 30 minutes
+        assert!(is_valid_duration("P1D")); // 1 day
+        assert!(is_valid_duration("P1DT2H30M")); // 1 day, 2 hours, 30 minutes
+        assert!(!is_valid_duration("1H")); // Missing P
+        assert!(!is_valid_duration("")); // Empty
+        assert!(!is_valid_duration("PT@H")); // Invalid character
     }
 
     #[test]
@@ -707,7 +728,8 @@ mod tests {
             "event-123".to_string(),
             "2025-12-01T10:00:00".to_string(),
             "Team Meeting".to_string(),
-        ).with_end_time("2025-12-01T11:00:00".to_string());
+        )
+        .with_end_time("2025-12-01T11:00:00".to_string());
         let id = event.create_id();
 
         let blob = event_json.as_bytes();
@@ -717,6 +739,9 @@ mod tests {
         assert_eq!(event_parsed.dtstart, "2025-12-01T10:00:00");
         assert_eq!(event_parsed.summary, "Team Meeting");
         assert!(event_parsed.locations.is_some());
-        assert_eq!(event_parsed.locations.as_ref().unwrap()[0].label, "Conference Room A");
+        assert_eq!(
+            event_parsed.locations.as_ref().unwrap()[0].label,
+            "Conference Room A"
+        );
     }
 }

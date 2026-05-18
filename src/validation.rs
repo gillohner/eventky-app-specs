@@ -95,8 +95,8 @@ pub fn is_valid_rrule(s: &str) -> bool {
 
 /// Validates a pubky:// URI.
 pub fn validate_pubky_uri(uri: &str) -> Result<(), String> {
-    let parsed = Url::parse(uri)
-        .map_err(|_| format!("Validation Error: Invalid URI format: {}", uri))?;
+    let parsed =
+        Url::parse(uri).map_err(|_| format!("Validation Error: Invalid URI format: {}", uri))?;
     if parsed.scheme() != "pubky" {
         return Err(format!(
             "Validation Error: URI must use pubky:// protocol: {}",
