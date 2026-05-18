@@ -323,14 +323,12 @@ impl Validatable for PubkyAppEvent {
         });
 
         // Sanitize URIs (image_uri, url, calendar_uris)
-        let image_uri = self
-            .image_uri
-            .and_then(|uri| match Url::parse(&uri.trim()) {
-                Ok(url) => Some(url.to_string()),
-                Err(_) => None,
-            });
+        let image_uri = self.image_uri.and_then(|uri| match Url::parse(uri.trim()) {
+            Ok(url) => Some(url.to_string()),
+            Err(_) => None,
+        });
 
-        let url = self.url.and_then(|uri| match Url::parse(&uri.trim()) {
+        let url = self.url.and_then(|uri| match Url::parse(uri.trim()) {
             Ok(url) => Some(url.to_string()),
             Err(_) => None,
         });
@@ -340,7 +338,7 @@ impl Validatable for PubkyAppEvent {
             .map(|uris| {
                 uris.into_iter()
                     .take(MAX_CALENDAR_URIS)
-                    .filter_map(|uri| match Url::parse(&uri.trim()) {
+                    .filter_map(|uri| match Url::parse(uri.trim()) {
                         Ok(url) => Some(url.to_string()),
                         Err(_) => None,
                     })
@@ -350,7 +348,7 @@ impl Validatable for PubkyAppEvent {
 
         // Sanitize timezones
         let dtstart_tzid = self.dtstart_tzid.and_then(|tz| {
-            if is_valid_timezone(&tz.trim()) {
+            if is_valid_timezone(tz.trim()) {
                 Some(tz.trim().to_string())
             } else {
                 None
@@ -358,7 +356,7 @@ impl Validatable for PubkyAppEvent {
         });
 
         let dtend_tzid = self.dtend_tzid.and_then(|tz| {
-            if is_valid_timezone(&tz.trim()) {
+            if is_valid_timezone(tz.trim()) {
                 Some(tz.trim().to_string())
             } else {
                 None
@@ -367,7 +365,7 @@ impl Validatable for PubkyAppEvent {
 
         // Sanitize duration
         let duration = self.duration.and_then(|dur| {
-            if is_valid_duration(&dur.trim()) {
+            if is_valid_duration(dur.trim()) {
                 Some(dur.trim().to_string())
             } else {
                 None

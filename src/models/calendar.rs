@@ -269,14 +269,12 @@ impl Validatable for PubkyAppCalendar {
         });
 
         // Sanitize image_uri and url
-        let image_uri = self
-            .image_uri
-            .and_then(|uri| match Url::parse(&uri.trim()) {
-                Ok(url) => Some(url.to_string()),
-                Err(_) => None,
-            });
+        let image_uri = self.image_uri.and_then(|uri| match Url::parse(uri.trim()) {
+            Ok(url) => Some(url.to_string()),
+            Err(_) => None,
+        });
 
-        let url = self.url.and_then(|uri| match Url::parse(&uri.trim()) {
+        let url = self.url.and_then(|uri| match Url::parse(uri.trim()) {
             Ok(url) => Some(url.to_string()),
             Err(_) => None,
         });

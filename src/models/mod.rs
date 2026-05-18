@@ -8,6 +8,7 @@ use crate::{PubkyAppAttendee, PubkyAppCalendar, PubkyAppEvent};
 
 /// A unified enum wrapping all EventkyApp objects dispatched from the watcher.
 #[derive(Debug, Clone)]
+#[allow(clippy::large_enum_variant)]
 pub enum EventkyAppObject {
     Event(PubkyAppEvent),
     Calendar(PubkyAppCalendar),

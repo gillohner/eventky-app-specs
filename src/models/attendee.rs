@@ -208,7 +208,7 @@ impl Validatable for PubkyAppAttendee {
         };
 
         // Sanitize event URI
-        let x_pubky_event_uri = match Url::parse(&self.x_pubky_event_uri.trim()) {
+        let x_pubky_event_uri = match Url::parse(self.x_pubky_event_uri.trim()) {
             Ok(url) => url.to_string(),
             Err(_) => self.x_pubky_event_uri.trim().to_string(), // Keep original if not parseable as URL
         };
