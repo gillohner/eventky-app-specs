@@ -1,47 +1,43 @@
+> **Warning:** This project is in early development. APIs and data models may change without notice.
+
 # eventky-app-specs
 
-Rust + WASM data model package for Eventky.
+Rust/WASM type library defining Eventky data models and builders.
+It extends and reuses upstream [`pubky-app-specs`](https://github.com/pubky/pubky-app-specs).
 
-## Release automation
+## Models
 
-This repo now includes GitHub Actions workflows for CI and publishing:
+| Model | Path | ID Type | Description |
+|---|---|---|---|
+| `PubkyAppCalendar` | `/pub/eventky.app/calendars/<id>` | TimestampId | Calendar metadata and sharing config |
+| `PubkyAppEvent` | `/pub/eventky.app/events/<id>` | TimestampId | Event details (RFC 5545/7986 style fields) |
+| `PubkyAppAttendee` | `/pub/eventky.app/attendees/<id>` | HashId | RSVP/attendance relation for events |
+| `PubkyAppTag` (eventky namespace) | `/pub/eventky.app/tags/<id>` | HashId | Universal tag shape stored in Eventky namespace |
 
-- `.github/workflows/release.yml`
-  - Runs CI on push/PR.
-  - On published GitHub release (or manual dispatch with tag), builds WASM and publishes npm package.
-- `.github/workflows/publish.yml`
-  - Triggered by tag push (`v*`).
-  - Publishes to crates.io and npm (idempotent), then creates GitHub release notes.
+## Notes
 
-## Required secrets
+- Eventky keeps calendar/event/attendee records in the `eventky.app` namespace.
+- Tag objects use the universal `PubkyAppTag` structure, but are written under `/pub/eventky.app/tags/*`.
+- This crate is used by Eventky frontend and Eventky Nexus plugin for consistent IDs and validation.
 
-Add these in GitHub repo settings (`Settings -> Secrets and variables -> Actions`):
+## Build
 
-- `CARGO_REGISTRY_TOKEN` - crates.io publish token.
-- `NPM_TOKEN` - npm token with publish rights for `@eventky/pubky-app-specs`.
+```sh
+# Run tests
+cargo test
 
-## Versioning rules
+# Build WASM package
+wasm-pack build --target bundler --release
+```
 
-- `Cargo.toml` version must match the pushed tag without the leading `v`.
-  - Example: tag `v0.1.1` requires `version = "0.1.1"`.
-- Pre-release tags (`-alpha`, `-beta`, `-rc`) publish npm under non-latest dist-tag.
+## Publishing
 
-## Typical release flow
+- Crate: `eventky-app-specs` (crates.io)
+- npm package: `eventky-app-specs`
 
-1. Update `Cargo.toml` version.
-2. Run local checks:
-   - `cargo test`
-   - `wasm-pack build --target bundler --release`
-3. Commit and push.
-4. Create and push tag:
-   - `git tag vX.Y.Z`
-   - `git push origin vX.Y.Z`
-5. Confirm `Publish` workflow succeeds.
+Tag format must match `Cargo.toml` version:
 
-## npm package name
-
-WASM output package metadata is normalized in CI to publish as:
-
-- `@eventky/pubky-app-specs`
-
-This keeps Eventky app dependency coordinates stable.
+```sh
+git tag vX.Y.Z
+git push origin vX.Y.Z
+```

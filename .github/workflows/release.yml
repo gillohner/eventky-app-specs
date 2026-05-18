@@ -60,10 +60,6 @@ jobs:
             exit 1
           fi
 
-      - name: Force npm package name
-        run: |
-          node -e 'const fs=require("fs");const p="pkg/package.json";const j=JSON.parse(fs.readFileSync(p,"utf8"));j.name="@eventky/pubky-app-specs";fs.writeFileSync(p,JSON.stringify(j,null,2)+"\n");'
-
       - name: Setup npm auth
         uses: actions/setup-node@v4
         with:
